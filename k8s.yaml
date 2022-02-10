@@ -1,0 +1,109 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend
+  labels:
+    app: backend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: backend
+  template:
+    metadata:
+      labels:
+        app: backend
+    spec:
+      containers:
+        - name: backend
+          image: issaouib/employeesback:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8080
+          env:
+            - name: BUILD_VERSION
+              value: BUILD_VERSION_VAR
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend
+  labels:
+    app: backend
+spec:
+  type: ClusterIP
+  selector:
+    app: backend
+  ports:
+    - port: 8080
+      targetPort: 8080
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: front
+  labels:
+    app: front
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: front
+  template:
+    metadata:
+      labels:
+        app: front
+    spec:
+      containers:
+        - name: front
+          image: issaouib/employeesfront:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 80
+          env:
+            - name: BUILD_VERSION
+              value: BUILD_VERSION_VAR
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: front
+  labels:
+    app: front
+spec:
+  type: ClusterIP
+  selector:
+    app: front
+  ports:
+    - port: 80
+      targetPort: 80
+
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: myapp
+  annotations:
+    kubernetes.io/ingress.class: nginx
+spec:
+  rules:
+  - host: "myapp.dev-ops.tn"
+    http:
+      paths:
+      - pathType: Prefix
+        path: "/"
+        backend:
+          service:
+            name: front
+            port:
+              number: 80
+      - pathType: Prefix
+        path: "/rest"
+        backend:
+          service:
+            name: backend
+            port:
+              number: 8080
